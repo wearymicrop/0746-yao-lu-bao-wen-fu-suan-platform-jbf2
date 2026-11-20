@@ -1,0 +1,24 @@
+[
+  {
+    "terminal": "终端A",
+    "records": [
+      { "batch": "YL-1120-01", "pieces": 96, "soak_s": 1320 },
+      { "batch": "YL-1120-02", "pieces": 104, "soak_s": 1260 }
+    ]
+  },
+  {
+    "terminal": "终端B",
+    "records": [
+      { "batch": "YL-1120-02", "pieces": 104, "soak_s": 1260 },
+      { "batch": "YL-1120-03", "pieces": 88, "soak_s": 1140 },
+      { "batch": "YL-1120-04", "pieces": 90, "soak_s": 1200 }
+    ]
+  },
+  {
+    "terminal": "终端C",
+    "records": [
+      { "batch": "YL-1120-04", "pieces": 91, "soak_s": 1200 },
+      { "batch": "YL-1120-05", "pieces": 110, "soak_s": 1380 }
+    ]
+  }
+]

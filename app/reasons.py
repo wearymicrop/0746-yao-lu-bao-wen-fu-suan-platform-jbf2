@@ -13,4 +13,7 @@ LABELS = {
     "NO_READING": "有效读数失采",
     "BELOW_TARGET": "热区低于配方温度",
     "PROVEN": "所需热区均达标",
+    "BAD_RECORD": "缓存记录的炉次、产量或保温时长无效",
+    "BATCH_CONFLICT": "同炉次多值报送，整批隔离待核",
+    "TERMINAL_MISSING": "终端断网未恢复，缓存记录未到",
 }

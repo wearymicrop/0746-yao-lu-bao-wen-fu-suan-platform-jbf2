@@ -8,6 +8,8 @@ RULE_VERSION = "1.0.0"
 MAX_SOURCE_BYTES = 512 * 1024
 MAX_ROWS = 2500
 SAMPLES = {"clean": "干净样例", "dirty": "脏样例"}
+TERMINALS = ("终端A", "终端B", "终端C")
+MAX_PACKETS = 64
 
 
 def database_path():

@@ -20,7 +20,7 @@ SQLite 默认保存在 `instance/ledger.sqlite3`，容器使用 `state` 命名�
 
 ## 模块
 
-炉单采集、热电偶校正、热区对齐、保温计时、断档复判、炉批勾稽、签核归档。
+炉单采集、热电偶校正、热区对齐、保温计时、断档复判、炉批勾稽、签核归档、班次总账。
 接口索引在 `/docs`，字段和边界见 [数据字典](docs/DATA-DICTIONARY.md)，规则与测试见 [深度登记](docs/DEPTH.md)。
 
 已下载的凭证可用 `python -m app.modules.m7_archive.verify 证据.json` 检查输入、结果和签核摘要。

@@ -14,6 +14,17 @@ class Ledger:
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS shift_records (
+                    shift TEXT NOT NULL,
+                    record_key TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    PRIMARY KEY (shift, record_key)
+                );
+                CREATE TABLE IF NOT EXISTS handovers (
+                    id TEXT PRIMARY KEY,
+                    shift TEXT NOT NULL,
+                    payload TEXT NOT NULL
+                );
             """)
 
     @contextmanager
@@ -56,5 +67,37 @@ class Ledger:
             cursor = conn.execute(
                 "INSERT OR IGNORE INTO runs VALUES (?, ?)",
                 (payload["id"], canonical(payload)),
+            )
+            return cursor.rowcount == 0
+
+    def shift_records(self, shift):
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT payload FROM shift_records WHERE shift = ? ORDER BY rowid",
+                (shift,),
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
+    def put_shift_record(self, shift, key, payload):
+        with self.connect() as conn:
+            cursor = conn.execute(
+                "INSERT OR IGNORE INTO shift_records VALUES (?, ?, ?)",
+                (shift, key, canonical(payload)),
+            )
+            return cursor.rowcount == 0
+
+    def handovers(self, shift):
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT payload FROM handovers WHERE shift = ? ORDER BY rowid",
+                (shift,),
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
+    def put_handover(self, payload):
+        with self.connect() as conn:
+            cursor = conn.execute(
+                "INSERT OR IGNORE INTO handovers VALUES (?, ?, ?)",
+                (payload["id"], payload["shift"], canonical(payload)),
             )
             return cursor.rowcount == 0

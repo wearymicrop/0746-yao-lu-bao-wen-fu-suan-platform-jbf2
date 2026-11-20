@@ -273,3 +273,178 @@ el("rerun").onclick = async () => {
   }
 };
 load(source);
+
+// 班次总账：断网缓存合并、带缺交班
+const DECISIONS = { FULL: "整账交班", PARTIAL: "带缺交班" };
+const pad = (n) => String(n).padStart(2, "0");
+const now = new Date();
+el("shift-id").value =
+  `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-白班`;
+const shiftId = () => el("shift-id").value.trim();
+function table(target, columns, entries, emptyText) {
+  if (!entries.length) {
+    el(target).replaceChildren(make("p", emptyText, "empty"));
+    return;
+  }
+  const node = make("table");
+  const head = node.createTHead().insertRow();
+  columns.forEach((label) => head.append(make("th", label)));
+  const body = node.createTBody();
+  entries.forEach((entry) => {
+    const row = body.insertRow();
+    entry.forEach((value, index) =>
+      row.append(make("td", value, index === 0 ? "" : "num")),
+    );
+  });
+  el(target).replaceChildren(node);
+}
+function renderShift(view) {
+  const ruling = el("shift-ruling");
+  ruling.textContent = view.ruling;
+  ruling.classList.toggle("full", view.decision === "FULL");
+  const t = view.totals;
+  el("shift-metrics").replaceChildren(
+    ...[
+      ["产量合计", t.pieces, " 件"],
+      ["保温合计", t.soak_s, " 秒"],
+      ["采纳炉次", t.batches, " 炉"],
+      ["隔离待核", t.quarantined_batches, " 炉"],
+      ["未到终端", t.missing_terminals, " 台"],
+    ].map(([label, value, unit]) => {
+      const tile = make("div", undefined, "kpi");
+      tile.append(make("span", label), make("strong", value), make("small", unit));
+      return tile;
+    }),
+  );
+  table(
+    "adopted-table",
+    ["炉次", "产量(件)", "保温(秒)", "来源终端", "报送"],
+    view.adopted.map((row) => [
+      row.batch,
+      row.pieces,
+      row.soak_s,
+      row.sources.join("、"),
+      `${row.reports} 次`,
+    ]),
+    "暂无到账快照",
+  );
+  table(
+    "quarantine-table",
+    ["炉次", "终端", "产量(件)", "保温(秒)", "判定"],
+    view.quarantined.flatMap((item) =>
+      item.records.map((rec) => [
+        item.batch,
+        rec.terminal,
+        rec.pieces,
+        rec.soak_s,
+        item.message,
+      ]),
+    ),
+    "无被隔离记录",
+  );
+  el("shift-gaps").replaceChildren(
+    ...(view.gaps.length
+      ? view.gaps.map((gap) => {
+          const row = make("div", undefined, "gap");
+          const summary = make("span", gap.terminal);
+          summary.append(make("small", gap.message));
+          row.append(summary, make("time", "待补"));
+          return row;
+        })
+      : [make("p", "三台缓存均已到齐", "empty")]),
+  );
+}
+function renderHandovers(list) {
+  el("handover-list").replaceChildren(
+    ...(list.length
+      ? list.map((item) => {
+          const row = make("div", undefined, "handover");
+          row.append(
+            make("code", item.id.slice(9, 21)),
+            make("span", `${item.operator} · ${DECISIONS[item.decision]}`),
+          );
+          row.title = item.ruling;
+          return row;
+        })
+      : [make("p", "尚无交班凭证", "empty")]),
+  );
+}
+async function loadShift() {
+  if (!shiftId()) {
+    el("shift-ruling").textContent = "请输入班次标识";
+    return;
+  }
+  try {
+    const view = await api(`/api/shifts/${encodeURIComponent(shiftId())}`);
+    renderShift(view);
+    const history = await api(
+      `/api/shifts/${encodeURIComponent(shiftId())}/handovers`,
+    );
+    renderHandovers(history.handovers);
+  } catch (error) {
+    el("shift-ruling").textContent = error.message;
+  }
+}
+async function postPackets(body, note) {
+  const result = await api(
+    `/api/shifts/${encodeURIComponent(shiftId())}/packets`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: typeof body === "string" ? body : JSON.stringify(body),
+    },
+  );
+  el("packet-feedback").textContent =
+    note ||
+    `入账 ${result.stored} 条 · 重复 ${result.duplicates} 条 · 拒收 ${result.rejected.length} 条`;
+  renderShift(result.ledger);
+}
+el("shift-load").onclick = loadShift;
+el("packet").onchange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    await postPackets(await file.text());
+  } catch (error) {
+    el("packet-feedback").textContent = error.message;
+  } finally {
+    event.target.value = "";
+  }
+};
+el("shift-demo").onclick = async () => {
+  try {
+    const packets = await (await fetch("/static/shift-demo.json")).json();
+    await postPackets(
+      packets.slice(0, 2),
+      "演示：终端A、终端B 缓存到账，终端C 断网未恢复",
+    );
+  } catch (error) {
+    el("packet-feedback").textContent = error.message;
+  }
+};
+el("handover-form").onsubmit = async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  button.disabled = true;
+  try {
+    const result = await api(
+      `/api/shifts/${encodeURIComponent(shiftId())}/handover`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operator: el("handover-operator").value }),
+      },
+    );
+    el("handover-feedback").textContent =
+      `${result.reused ? "凭证已存在" : "交班完成"} · ${DECISIONS[result.decision]} · ${result.id.slice(0, 21)}`;
+    const history = await api(
+      `/api/shifts/${encodeURIComponent(shiftId())}/handovers`,
+    );
+    renderHandovers(history.handovers);
+  } catch (error) {
+    el("handover-feedback").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+};
+loadShift();

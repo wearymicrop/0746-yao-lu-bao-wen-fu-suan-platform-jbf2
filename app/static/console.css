@@ -403,6 +403,81 @@ th {
   margin-top: 7px;
   overflow-wrap: anywhere;
 }
+.shift {
+  grid-column: 1 / -1;
+}
+.shift-tools,
+#handover-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+#shift-id {
+  width: 170px;
+}
+#packet-feedback,
+#handover-feedback {
+  color: var(--sub);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ruling {
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  color: var(--warn);
+}
+.ruling.full {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.shift-kpis {
+  margin: 0 12px 10px;
+}
+.shift-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.shift-cols h3 {
+  margin: 0 0 6px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 500;
+}
+#shift-gaps {
+  display: grid;
+  gap: 4px;
+}
+#handover-form button {
+  background: var(--accent);
+  color: #152117;
+  font-weight: 700;
+}
+#handover-list {
+  padding: 0 12px 12px;
+  display: grid;
+  gap: 4px;
+}
+.handover {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding: 5px 2px;
+}
+.handover code {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.handover span {
+  color: var(--sub);
+  font-size: 12px;
+}
 .run-actions {
   margin-top: 8px;
 }
@@ -418,7 +493,8 @@ th {
   .frame {
     grid-template-columns: 140px minmax(0, 1fr);
   }
-  .grid {
+  .grid,
+  .shift-cols {
     grid-template-columns: minmax(0, 1fr);
   }
   .rail {

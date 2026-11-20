@@ -13,6 +13,7 @@
 | M5 断档复判 | 找到缺证原因及恢复点 | `GET /api/gaps/{source}` | `app/modules/m5_gaps/grouping.py` | `tests/test_gaps.py` |
 | M6 炉批勾稽 | 核对计划时长与读数行账 | `GET /api/reconcile/{source}` | `app/modules/m6_reconcile/service.py` | `tests/test_reconcile.py` |
 | M7 签核归档 | 按证据签核、重跑、导出 | `POST /api/runs` | `app/modules/m7_archive/signoff.py` `app/modules/m7_archive/service.py` | `tests/test_archive.py` `tests/test_bundle.py` |
+| M8 班次总账 | 合并断网缓存、裁决带缺交班 | `POST /api/shifts/{shift}/packets` `POST /api/shifts/{shift}/handover` | `app/modules/m8_shift/merge.py` `app/modules/m8_shift/service.py` | `tests/test_shift.py` |
 
 ## 陷阱登记
 
@@ -27,6 +28,14 @@
 | TRAP-19 | 同一时段缺证和失温同时出现 | 只看失温 | 缺证优先，留失温证据 | `app/modules/m4_soak/service.py` | `tests/test_soak.py::test_unknown_thermal_state_counts_before_cold` |
 | TRAP-23 | 配方边界相邻 | 两段合算连续 | 左闭右开且版本处切段 | `app/modules/m4_soak/service.py` | `tests/test_soak.py::test_version_break_beats_sum` |
 | TRAP-25 | 试签配方与在用版并发 | 任取一版 | 记录双来源并切入缺证 | `app/modules/m4_soak/service.py` | `tests/test_soak.py::test_recipe_overlap_cannot_choose_last` |
+| TRAP-26 | 断网恢复后缓存包重试重传 | 重复入账 | 按终端+炉次+产量+保温摘要去重，重试不新增 | `app/modules/m8_shift/service.py` | `tests/test_shift.py::test_retry_upload_never_adds_records` |
+| TRAP-27 | 同炉次多台报送值不一致 | 任取一值 | 同值只计一次留全部来源，异值整批隔离 | `app/modules/m8_shift/merge.py` | `tests/test_shift.py::test_conflicting_batch_quarantined_and_excluded_from_totals` |
+| TRAP-28 | 交班后终端才恢复 | 补登丢账或重复 | 总账只增不改，再交班生成新凭证，旧凭证保留 | `app/modules/m8_shift/service.py` | `tests/test_shift.py::test_recovery_merge_after_handover_is_lossless` |
+
+## 班次裁决
+
+换班前总账必须交出，未恢复终端不等齐：已到终端快照按同一口径入账，未到终端与隔离炉次挂账列示，不计入合计也不丢弃。
+去重口径唯一出处是 `ledger_view`：产量与保温时长取自同一采纳集，不会一个多算一个少算。恢复补登只增不改，交班凭证按内容摘要幂等。
 
 ## 对账
 
